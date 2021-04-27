@@ -12,12 +12,11 @@ public:
 	std::vector<Point> lights;
 	std::vector<Obj*> objects;
 
-	double aspect;
 	double lightRange = 2;
-	double lightStep = 0.02;
+	double lightStep = 0.01;
 	Camera camera;
 
-	int bounceLimit = 20;
+	int bounceLimit = 10;
 
 	World();
 

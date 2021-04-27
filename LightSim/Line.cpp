@@ -6,12 +6,12 @@
 
 Line::Line(Point a, Point b) : Ray(a, b)
 {
-	l = Vector(b - a).Length();
+	length = Vector(b - a).Length();
 }
 
 Line::Line(Ray r, double l) : Ray(r)
 {
-	this->l = l;
+	this->length = l;
 }
 
 const Point& Line::p1() const
@@ -21,18 +21,18 @@ const Point& Line::p1() const
 
 Point Line::p2() const
 {
-	return getPointFromT(l);
+	return getPointFromT(length);
 }
 
 bool Line::isPointOn(const Point& p) const {
 	Point p1v = p1();
 	Point p2v = p2();
-	return (p.x <= p1v.x == p.x >= p2v.x) && (p.y <= p1v.y == p.y >= p2v.y);
+	return ((float)p.x <= (float)p1v.x == (float)p.x >= (float)p2v.x) && ((float)p.y <= (float)p1v.y == (float)p.y >= (float)p2v.y);
 }
 
 Vector Line::normal() const
 {
-	return Vector(d.y, -d.x);
+	return d.Normal();
 }
 
 Vector Line::normal(const Point& at)
@@ -46,16 +46,16 @@ void Line::draw(Camera& cam)
 }
 
 
-Point Line::intersect(Ray& r)
+Ray Line::intersect(Ray& r)
 {
 	genLineFormula();
 	r.genLineFormula();
 
 	if (slope == r.slope) {
 		if (offset == r.offset) {
-			return o;
+			return Ray(o, normal());
 		}
-		else return Point();
+		else return Ray();
 	}
 
 	double x = (r.offset - offset) / (slope - r.slope);
@@ -66,7 +66,7 @@ Point Line::intersect(Ray& r)
 		y = slope * x + offset;
 	Point i = Point(x, y);
 	if (isPointOn(i) && r.isPointOn(i)) {
-		return i;
+		return Ray(i, normal());
 	}
-	return Point();
+	return Ray();
 }

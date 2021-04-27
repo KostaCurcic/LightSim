@@ -10,6 +10,7 @@ public:
 	Vector(double X, double Y) : Point(X, Y) {};
 	Vector& Unzero();
 	Vector& Normalize();
+	Vector Normal() const;
 	double Length() const;
 	double operator*(const Vector&) const;
 	Vector operator*(const double) const;

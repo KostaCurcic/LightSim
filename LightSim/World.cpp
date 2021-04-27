@@ -2,17 +2,16 @@
 
 World::World()
 {
-	aspect = 1;
-	lights.push_back(Point(10000000, 0));
-	//lights.push_back(Point(50, 45));
-	//lights.push_back(Point(1.5, -0.5));
+	lights.push_back(Point(50000, 0));
+	lights.push_back(Point(50, 15));
+	lights.push_back(Point(1.5, -0.5));
 }
 
 void World::draw()
 {
 	int c = 0;
 	for (auto i = lights.begin(); i != lights.end(); i++) {
-		drawLight(*i, c % 3 == 0, c % 3 == 1, c % 3 == 2, 0.4f);
+		drawLight(*i, c % 3 == 0, c % 3 == 1, c % 3 == 2, 0.2f);
 		c++;
 	}
 	for (auto i = objects.begin(); i != objects.end(); i++) {
@@ -22,17 +21,20 @@ void World::draw()
 
 void World::bounceRay(Ray nr, float r, float g, float b, float a, Obj* src, int bounce)
 {
+	if (bounce >= bounceLimit) return;
 	Point finalCol = Point();
+	Vector finalNorm = Vector();
 	double finalLen = INFINITY;
 	Obj* colObj = nullptr;
 	for (auto i = objects.begin(); i != objects.end(); i++) {
 		if (*i == src) continue;
-		Point col = (*i)->intersect(nr);
-		if (!col.isValid()) continue;
-		double len = Vector(col - nr.o).Length();
+		Ray col = (*i)->intersect(nr);
+		if (!col.o.isValid()) continue;
+		double len = Vector(col.o - nr.o).Length();
 		if(len < finalLen){
 			finalLen = len;
-			finalCol = col;
+			finalCol = col.o;
+			finalNorm = col.d;
 			colObj = *i;
 		}
 	}
@@ -46,12 +48,12 @@ void World::bounceRay(Ray nr, float r, float g, float b, float a, Obj* src, int 
 
 		switch (colObj->behavior) {
 		case reflect:
-			newVec = nr.d.Reflect(colObj->normal(finalCol));
+			newVec = nr.d.Reflect(finalNorm);
 			newRay = Ray(finalCol, newVec);
 			bounceRay(newRay, r, g, b, a, colObj, ++bounce);
 			return;
 		case refract:
-			newVec = nr.d.Refract(colObj->normal(finalCol), colObj->refInd / nr.curRefIndex);
+			newVec = nr.d.Refract(finalNorm, colObj->refInd / nr.curRefIndex);
 			newRay = Ray(finalCol, newVec);
 			newRay.curRefIndex = colObj->refInd;
 			bounceRay(newRay, r, g, b, a, colObj, ++bounce);

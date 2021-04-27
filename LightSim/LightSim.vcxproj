@@ -144,6 +144,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Camera.cpp" />
+    <ClCompile Include="FunctionalObj.cpp" />
     <ClCompile Include="GLInit.cpp" />
     <ClCompile Include="Line.cpp" />
     <ClCompile Include="OpenGL3.1.cpp" />
@@ -156,6 +157,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Camera.h" />
+    <ClInclude Include="FunctionalObj.h" />
     <ClInclude Include="glext.h" />
     <ClInclude Include="GLInit.h" />
     <ClInclude Include="Line.h" />

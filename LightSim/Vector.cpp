@@ -29,6 +29,11 @@ Vector & Vector::Normalize()
 	return *this;
 }
 
+Vector Vector::Normal() const
+{
+	return Vector(y, -x);
+}
+
 double Vector::Length() const
 {
 	return sqrtf(x * x + y * y);

@@ -16,7 +16,8 @@ class Obj
 {
 public:
 	virtual void draw(Camera& cam) = 0;
-	virtual Point intersect(Ray&) = 0;
+	//Return contains ray with origin on intersection point, and direction of colision surface normal
+	virtual Ray intersect(Ray&) = 0;
 	virtual Vector normal(const Point& at) = 0;
 
 	Behavior behavior;

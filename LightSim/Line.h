@@ -19,9 +19,9 @@ public:
 	Vector normal(const Point& at);
 	void draw(Camera& cam);
 
-	Point intersect(Ray&);
+	Ray intersect(Ray&);
 
-	double l;
+	double length;
 
 private:
 
