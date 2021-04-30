@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Ray.h"
+#include "Color.h"
 
 class Line;
 
@@ -12,14 +13,27 @@ public:
 	Line *edgeLines[4];
 
 	double aspect;
+	int sensorRes = 1000;
+	float senRenWidth = 0.1;
+	float gamma = 2.224f;
+
+	double xPos = 0;
+	double yPos = 0;
+	double rScale = 2;
+
+	Color* pixels;
 
 	Camera();
+	~Camera();
 
-	void drawRay(Ray& l, float r, float g, float b, float a);
-	void drawLine(Line& l, float r, float g, float b, float a);
+	void drawRay(Ray& l, Color c);
 
-	void drawUnsafe(Line l, float r, float g, float b, float a);
-	void drawUnsafe(Point* p, int n, float r, float g, float b, float a);
+	void drawUnsafe(Line l, Color c);
+	void drawUnsafe(Point* p, int n, Point offset, Color c);
+
+	void renderSensor();
+	void recalculateLines();
+	void rescaleWorld();
 
 private:
 };

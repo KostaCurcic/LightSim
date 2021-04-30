@@ -19,7 +19,9 @@ public:
 	Vector normal(const Point& at);
 	void draw(Camera& cam);
 
-	Ray intersect(Ray&);
+	Line& genLineFormula();
+
+	bool intersect(Ray& r, Point* col, Vector* normal, double* per);
 
 	double length;
 

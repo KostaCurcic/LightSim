@@ -6,7 +6,7 @@ class Vector : public Point
 {
 public:
 	Vector(const Point&);
-	Vector() {};
+	Vector() : Point() {};
 	Vector(double X, double Y) : Point(X, Y) {};
 	Vector& Unzero();
 	Vector& Normalize();

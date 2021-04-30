@@ -11,7 +11,7 @@ public:
 	Ray(Point, Vector);
 
 	virtual bool isPointOn(const Point&) const;
-	void genLineFormula();
+	virtual Ray& genLineFormula();
 
 	Point getPointFromT(double t) const;
 

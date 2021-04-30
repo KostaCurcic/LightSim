@@ -6,7 +6,7 @@
 
 #include "ShaderHelper.h"
 
-#define XRES 1600
+#define XRES 900
 #define YRES 900
 
 
@@ -18,25 +18,33 @@ World world;
 Line* bar;
 FunctionalObj* fo;
 bool moving = false;
+bool lensMv = false;
+short rWidth = XRES;
+short rHeight = YRES;
+short mouseXOld;
+short mouseYOld;
+double rulX, rulY;
 
 double lens(double per) {
-	per = per * 2 - 1;
-	double r = 1 - (per * per);
-	return r / 25;
+	per += 2.5;
+	double r = sqrt(6 * per - per * per) - 2.95;
+	//r = fmod(r, 0.2);
+	return r;
 }
 
 void initial(WPARAM wParam, LPARAM lParam) {
+	world.camera.aspect = XRES / (float)YRES;
 	glOrtho(-world.camera.aspect, world.camera.aspect, -1.0f, 1.0f, -1.0f, 1.0f);
 	bar = new Line[2]{ Line(Point(-.5, 0), Point(-.5, .5)), Line(Point(-.5, -0.5), Point(-.5, -1)) };
 	bar[0].behavior = absorb;
 	bar[1].behavior = absorb;
 	world.objects.push_back(bar);
 	world.objects.push_back(bar + 1);
-	fo = new FunctionalObj[2]{ FunctionalObj(Point(-.5, 0), Point(-.5, -.5), [](double per)
+	fo = new FunctionalObj[2]{ FunctionalObj(Point(-.5, 0), Point(-.5, -.1), [](double per)
 		{
 			return lens(per);
 		}
-	), FunctionalObj(Point(-.5, 0), Point(-.5, -.5), [](double per)
+	), FunctionalObj(Point(-.5, 0), Point(-.5, -.1), [](double per)
 		{
 			return -lens(per);
 		}
@@ -44,11 +52,11 @@ void initial(WPARAM wParam, LPARAM lParam) {
 	fo[0].behavior = refract;
 	fo[0].refInd = 1;
 	fo[1].behavior = refract;
-	fo[1].refInd = 2;
+	fo[1].refInd = 1.5;
 	world.objects.push_back(fo);
 	world.objects.push_back(fo + 1);
 
-	Line* l = new Line(Point(-1, 0.5), Point(-1, -0.5));
+	Line* l = new Line(Point(-1.01, 0.001), Point(-1.01, -0.001));
 	l->behavior = sensor;
 	world.objects.push_back(l);
 
@@ -67,13 +75,43 @@ void initial(WPARAM wParam, LPARAM lParam) {
 }
 
 void mouse(WPARAM wParam, LPARAM lParam) {
-	double mx = ((short)(lParam & 0xFFFF)) / ((double)XRES) * 2 - 1;
-	double my = (YRES - (short)((lParam >> 16) & 0xFFFF)) / ((double)YRES) * 2 - 1;
+	short x = (short)(lParam & 0xFFFF);
+	short y = (short)((lParam >> 16) & 0xFFFF);
+
+	double mx = x / ((double)rWidth) * 2 - 1;
+	double my = (YRES - y) / ((double)rHeight) * 2 - 1;
+
+	mx = (mx * (world.camera.rScale * world.camera.aspect)) + world.camera.xPos;
+	my = (my * world.camera.rScale) + world.camera.yPos;
+
+	double rulLen = Vector(Point(rulX, rulY) - Point(mx, my)).Length();
+	int mod = 0;
+	while (rulLen < 1 && mod < 2) {
+		mod++;
+		rulLen *= 1000;
+	}
+	cout << '\r' << rulLen << ((mod == 0) ? "" : ((mod == 1) ? "m" : "micro")) << "       ";
+
 	if (moving) {
-		fo[0].o = Point(mx * world.camera.aspect, my);
-		fo[1].o = Point(mx * world.camera.aspect + 0.00, my);
-		bar[0].o = Point(mx * world.camera.aspect, my - 0.01);
-		bar[1].o = Point(mx * world.camera.aspect, my - 0.49);
+		double oldX = mouseXOld / ((double)rWidth) * 2 - 1;
+		double oldY = (YRES - mouseYOld) / ((double)rHeight) * 2 - 1;
+		oldX = (oldX * (world.camera.rScale * world.camera.aspect)) + world.camera.xPos;
+		oldY = (oldY * world.camera.rScale) + world.camera.yPos;
+
+		world.camera.xPos -= mx - oldX;
+		world.camera.yPos -= my - oldY;
+		world.camera.rescaleWorld();
+
+		mouseXOld = x;
+		mouseYOld = y;
+
+	}
+	else if (lensMv) {
+
+		fo[0].o = Point(mx, my);
+		fo[1].o = Point(mx + 0.00, my);
+		bar[0].o = Point(mx, my - 0.01);
+		bar[1].o = Point(mx, my - 0.49);
 	}
 }
 
@@ -88,18 +126,71 @@ void draw(WPARAM wParam, LPARAM lParam) {
 }
 
 void keyPress(WPARAM wParam, LPARAM lParam) {
-	if (wParam == VK_SPACE) {
-		moving = !moving;
+	switch (wParam)
+	{
+	case VK_SPACE:
+		lensMv = !lensMv;
+		break;
+	default:
+		break;
 	}
+}
+
+void resize(WPARAM wParam, LPARAM lParam) {
+	short xSize = (short)(lParam & 0xFFFF);
+	short ySize = (short)((lParam >> 16) & 0xFFFF);
+	world.camera.aspect = xSize / (float)ySize;
+	world.camera.rescaleWorld();
+	glViewport(0, 0, xSize, ySize);
+	rWidth = xSize;
+	rHeight = ySize;
+}
+
+void wheel(WPARAM wParam, LPARAM lParam) {
+	short scrolled = (short)((wParam >> 16) & 0xFFFF);
+	double mul = pow(1.1, -scrolled / 120);
+	world.camera.rScale *= mul;
+	world.camera.rescaleWorld();
+}
+
+void lmbD(WPARAM wParam, LPARAM lParam) {
+	short x = (short)(lParam & 0xFFFF);
+	short y = (short)((lParam >> 16) & 0xFFFF);
+
+	mouseXOld = x;
+	mouseYOld = y;
+
+	moving = true;
+}
+
+void lmbU(WPARAM wParam, LPARAM lParam) {
+	moving = false;
+}
+void rmbD(WPARAM wParam, LPARAM lParam) {
+	short x = (short)(lParam & 0xFFFF);
+	short y = (short)((lParam >> 16) & 0xFFFF);
+	double mx = x / ((double)rWidth) * 2 - 1;
+	double my = (YRES - y) / ((double)rHeight) * 2 - 1;
+
+	mx = (mx * (world.camera.rScale * world.camera.aspect)) + world.camera.xPos;
+	my = (my * world.camera.rScale) + world.camera.yPos;
+
+	rulX = mx;
+	rulY = my;
 }
 
 int main() {
 	EVENTFUNC fun[] = {
 		EVENTFUNC {WM_PAINT, draw},
+		EVENTFUNC {WM_SIZE, resize},
 		EVENTFUNC {WM_CREATE, initial},
 		EVENTFUNC {WM_MOUSEMOVE, mouse},
-		EVENTFUNC {WM_KEYUP, keyPress}
+		EVENTFUNC {WM_KEYUP, keyPress},
+		EVENTFUNC {WM_MOUSEWHEEL, wheel},
+		EVENTFUNC {WM_LBUTTONDOWN, lmbD},
+		EVENTFUNC {WM_LBUTTONUP, lmbU},
+		EVENTFUNC {WM_RBUTTONDOWN, rmbD}
 	};
 
-	DoGL(1600, 900, 4, fun);
+	DoGL(XRES, YRES, 9, fun);
 }

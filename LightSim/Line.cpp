@@ -42,31 +42,41 @@ Vector Line::normal(const Point& at)
 
 void Line::draw(Camera& cam)
 {
-	cam.drawLine(*this, 0, 0, 0, 1);
+	cam.drawUnsafe(*this, Color(0, 0, 0, 1));
+}
+
+Line& Line::genLineFormula()
+{
+	Ray::genLineFormula();
+	return *this;
 }
 
 
-Ray Line::intersect(Ray& r)
+bool Line::intersect(Ray& r, Point* col, Vector* normal, double* per)
 {
 	genLineFormula();
-	r.genLineFormula();
-
 	if (slope == r.slope) {
 		if (offset == r.offset) {
-			return Ray(o, normal());
+			*col = o;
+			if (normal) *normal = this->normal();
+			if (per) *per = 0;
+			return true;
 		}
-		else return Ray();
+		else return false;
 	}
 
 	double x = (r.offset - offset) / (slope - r.slope);
 	double y;
-	if (slope > 99999)
+	if (slope > 999)
 		y = r.slope * x + r.offset;
 	else
 		y = slope * x + offset;
 	Point i = Point(x, y);
 	if (isPointOn(i) && r.isPointOn(i)) {
-		return Ray(i, normal());
+		*col = i;
+		if (normal) *normal = this->normal();
+		if (per) *per = Vector(i - p1()).Length() / Vector(p2() - p1()).Length();
+		return true;
 	}
-	return Ray();
+	return false;
 }

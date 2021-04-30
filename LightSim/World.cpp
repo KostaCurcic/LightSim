@@ -2,39 +2,42 @@
 
 World::World()
 {
-	lights.push_back(Point(50000, 0));
-	lights.push_back(Point(50, 15));
-	lights.push_back(Point(1.5, -0.5));
+	lights.push_back(Point(5000, 0));
+	//lights.push_back(Point(50, 15));
+	//lights.push_back(Point(1.5, -0.5));
 }
 
 void World::draw()
 {
 	int c = 0;
 	for (auto i = lights.begin(); i != lights.end(); i++) {
-		drawLight(*i, c % 3 == 0, c % 3 == 1, c % 3 == 2, 0.2f);
+		drawLight(*i, Color(c % 3 == 0, c % 3 == 1, c % 3 == 2, 0.4));
 		c++;
 	}
 	for (auto i = objects.begin(); i != objects.end(); i++) {
 		(*i)->draw(camera);
 	}
+	camera.renderSensor();
 }
 
-void World::bounceRay(Ray nr, float r, float g, float b, float a, Obj* src, int bounce)
+void World::bounceRay(Ray nr, Color c, Obj* src, int bounce)
 {
+	nr.genLineFormula();
 	if (bounce >= bounceLimit) return;
-	Point finalCol = Point();
-	Vector finalNorm = Vector();
+	Point finalCol = Point(), col;
+	Vector finalNorm = Vector(), norm;
+	double finalPer, per = 0;
 	double finalLen = INFINITY;
 	Obj* colObj = nullptr;
 	for (auto i = objects.begin(); i != objects.end(); i++) {
 		if (*i == src) continue;
-		Ray col = (*i)->intersect(nr);
-		if (!col.o.isValid()) continue;
-		double len = Vector(col.o - nr.o).Length();
+		if (!(*i)->intersect(nr, &col, &norm, (*i)->behavior == sensor ? &per : 0)) continue;
+		double len = Vector(col - nr.o).Length();
 		if(len < finalLen){
 			finalLen = len;
-			finalCol = col.o;
-			finalNorm = col.d;
+			finalCol = col;
+			finalNorm = norm;
+			finalPer = per;
 			colObj = *i;
 		}
 	}
@@ -44,36 +47,39 @@ void World::bounceRay(Ray nr, float r, float g, float b, float a, Obj* src, int 
 
 	if (finalCol.isValid()) {
 		Line drawLine = Line(nr.o, finalCol);
-		camera.drawLine(drawLine, r, g, b, a);
+		camera.drawUnsafe(drawLine, c);
 
-		switch (colObj->behavior) {
-		case reflect:
-			newVec = nr.d.Reflect(finalNorm);
-			newRay = Ray(finalCol, newVec);
-			bounceRay(newRay, r, g, b, a, colObj, ++bounce);
-			return;
-		case refract:
-			newVec = nr.d.Refract(finalNorm, colObj->refInd / nr.curRefIndex);
-			newRay = Ray(finalCol, newVec);
-			newRay.curRefIndex = colObj->refInd;
-			bounceRay(newRay, r, g, b, a, colObj, ++bounce);
-			return;
-		case absorb:
-		case sensor:
-			//TODO sensor
-		default:
-			return;
+		if (finalNorm.isValid()) {
+			switch (colObj->behavior) {
+			case reflect:
+				newVec = nr.d.Reflect(finalNorm);
+				newRay = Ray(finalCol, newVec);
+				bounceRay(newRay, c, colObj, ++bounce);
+				return;
+			case refract:
+				newVec = nr.d.Refract(finalNorm, colObj->refInd / nr.curRefIndex);
+				newRay = Ray(finalCol, newVec);
+				newRay.curRefIndex = colObj->refInd;
+				bounceRay(newRay, c, colObj, ++bounce);
+				return;
+			case sensor:
+				camera.pixels[(int)(camera.sensorRes * finalPer)] = camera.pixels[(int)(camera.sensorRes * finalPer)] + c * c.a;
+				return;
+			case absorb:
+			default:
+				return;
+			}
 		}
 	}
 	else {
-		camera.drawRay(nr, r, g, b, a);
+		camera.drawRay(nr, c);
 	}
 }
 
-void World::drawLight(const Point& src, float r, float g, float b, float a)
+void World::drawLight(const Point& src, Color c)
 {
 	for (double i = -lightRange; i < lightRange; i += lightStep) {
 		Ray ray = Ray(src, Point(1, i));
-		bounceRay(ray, r, g, b, a, nullptr, 0);
+		bounceRay(ray, c, nullptr, 0);
 	}
 }

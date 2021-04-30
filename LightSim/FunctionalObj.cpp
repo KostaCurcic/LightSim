@@ -39,50 +39,60 @@ void FunctionalObj::draw(Camera& cam)
     Vector scale = Vector(p2() - p1());
     Vector n = Line::normal().Normalize() * length;
     for (int i = 0; i <= res; i++) {
-        pointBuff[i] = o + scale / res * i + n * fun(1.0 / res * i);
+        pointBuff[i] = scale / res * i + n * fun(1.0 / res * i);
     }
-    cam.drawUnsafe(pointBuff, res + 1, 0, 0, 0, 1);
+    cam.drawUnsafe(pointBuff, res + 1, o, Color(0, 0, 0, 1));
 }
 
-Ray FunctionalObj::intersect(Ray& r)
+bool FunctionalObj::intersect(Ray& r, Point* col, Vector* normal, double* per)
 {
-    r.genLineFormula();
+    Ray offsetRay = Ray(r);
+    offsetRay.o = offsetRay.o - o;
+    offsetRay.genLineFormula();
 
     int divs = pow(2, divisions);
     float stepSize = res / (float)divs;
+
     for (float i = 0; i < res; i += stepSize) {
-        if (Line(pointBuff[(int)i], pointBuff[(int)(i + stepSize)]).intersect(r).o.isValid()) {
-            return intDivide(i, i + stepSize, divs, r);
+        if (Line(pointBuff[(int)i], pointBuff[(int)(i + stepSize)]).intersect(offsetRay, col, normal, per)) {
+            if (col || normal || per) {
+                intDivide(i, i + stepSize, divs, offsetRay, col, normal, per);
+            }
+            return true;
         }
     }
-    return Ray();
+    return false;
 }
 
-Ray FunctionalObj::intDivide(int min, int max, int size, Ray& r)
+void FunctionalObj::intDivide(int min, int max, int size, Ray& r, Point* col, Vector* normal, double* per)
 {
     int range = max - min;
-    Ray retRay;
+    double stepSize = range / (float)size;
+    Point tempPt;
+    Line tempLine;
+    double precOff = 0.0;
     if (range > size) {
-        float stepSize = range / (float)size;
-        for (float i = min; i < max; i += stepSize) {
-            if (Line(pointBuff[(int)i], pointBuff[(int)(i + stepSize)]).intersect(r).o.isValid()) {
-                retRay = intDivide(i, i + stepSize, size, r);
-                if (retRay.o.isValid()) return retRay;
-                else return Line(pointBuff[(int)i], pointBuff[(int)(i + stepSize)]).intersect(r);
+        for (double i = min; i < max; i += stepSize) {
+            tempLine = Line(pointBuff[(int)i], pointBuff[(int)(i + stepSize)]);
+            if (tempLine.intersect(r, &tempPt, 0, 0)) {
+                *col = tempPt + o;
+                intDivide(i, i + stepSize, size, r, col, normal, per);
+                return;
             }
         }
     }
     else {
-        Ray ret;
+        double tempPer;
         for (int i = min; i < max; i++) {
-            ret = Line(pointBuff[(int)i], pointBuff[(int)(i + 1)]).intersect(r);
-            if (ret.o.isValid()) {
-                return ret;
+            tempLine = Line(pointBuff[(int)i], pointBuff[(int)(i + 1)]);
+            if (tempLine.intersect(r, &tempPt, normal, per ? &tempPer : 0)) {
+                *col = tempPt + o;
+                if (per) *per = min / (double)res + (i + tempPer) * stepSize;
+                return;
             }
         }
-        return Line(pointBuff[min], pointBuff[max]).intersect(r);
     }
-    return Ray();
+    *normal = Vector();
 }
 
 Vector FunctionalObj::normal(const Point& at)

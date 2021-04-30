@@ -89,7 +89,7 @@ void DoGL(int x, int y, int count, EVENTFUNC fcns[]) {
 
 	int a = RegisterClass(&myGLClass);
 
-	HWND win = CreateWindow(L"myGLClass", L"Test", WS_OVERLAPPEDWINDOW, 0, 0, x, y, 0, 0, 0, 0);
+	HWND win = CreateWindow(L"myGLClass", L"Test", WS_OVERLAPPEDWINDOW | WS_THICKFRAME, 0, 0, x, y, 0, 0, 0, 0);
 
 	ShowWindow(win, SW_SHOW);
 

@@ -2,6 +2,7 @@
 
 #include "Line.h"
 #include "Camera.h"
+#include "Color.h"
 #include "Obj.h"
 #include <vector>
 
@@ -13,7 +14,7 @@ public:
 	std::vector<Obj*> objects;
 
 	double lightRange = 2;
-	double lightStep = 0.01;
+	double lightStep = 0.005;
 	Camera camera;
 
 	int bounceLimit = 10;
@@ -23,6 +24,6 @@ public:
 	void draw();
 
 private:
-	void bounceRay(Ray nr, float r, float g, float b, float a, Obj *src, int bounce);
-	void drawLight(const Point& src, float r, float g, float b, float a);
+	void bounceRay(Ray nr, Color c, Obj *src, int bounce);
+	void drawLight(const Point& src, Color c);
 };

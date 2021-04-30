@@ -16,7 +16,7 @@ public:
 	~FunctionalObj();
 
 	void draw(Camera& cam);
-	Ray intersect(Ray&);
+	bool intersect(Ray& r, Point* col, Vector* normal, double* per);
 	Vector normal(const Point& at);
 
 	double (*fun)(double);
@@ -24,7 +24,7 @@ public:
 	Point* pointBuff;
 
 private:
-	int res = 256;
+	int res = 100000;
 	int divisions = 2;
-	Ray intDivide(int min, int max, int size, Ray& r);
+	void intDivide(int min, int max, int size, Ray& r, Point *col, Vector *normal, double *per);
 };
